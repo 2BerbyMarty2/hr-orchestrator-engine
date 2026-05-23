@@ -1,3 +1,5 @@
+<img width="1215" height="754" alt="Screenshot 2026-05-23 at 21 06 39" src="https://github.com/user-attachments/assets/540a953c-cd73-474b-8475-c964b35ed6a2" />
+<img width="1218" height="753" alt="Screenshot 2026-05-23 at 21 06 29" src="https://github.com/user-attachments/assets/bb52a040-8d5b-4d5c-b223-ff7346101fce" />
 # HR Automation Platform: Multi-Agent Task Routing Engine
 
 ## Project Overview
