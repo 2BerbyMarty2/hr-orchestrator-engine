@@ -1,0 +1,240 @@
+# HR Orchestrator Engine - Report
+
+## Table of Contents / Sections Overview
+
+| Section | Title | Key Topics Covered |
+| :--- | :--- | :--- |
+| **1.0** | **Project Overview** | Core objective and justification of the FastAPI/LangGraph stack. |
+
+
+| **2.0** | **System Architecture** | Component layout, modularity, and separation of concerns. |
+| **3.0** | **Core Engine Mechanics** | Intent classification logic, confidence scores, and LangGraph routing. |
+| **4.0** | **Memory & Audit Systems** | STM/LTM structure, significance scoring math, and append-only database rules. |
+| **5.0** | **API Documentation** | Pydantic data models and an overview of the 5 required REST routes. |
+| **6.0** | **Setup & Execution** | Environment setup, database initialization, and how to test via Swagger UI. |
+| **7.0** | **Future Improvements** | Known trade-offs, scalability considerations, and next steps for production. |
+
+---
+
+## 1. The Shared State Blueprint
+
+```python
+from typing import TypedDict, Any
+
+class HRState(TypedDict):
+    user_message: str        # Raw text input from the user
+    intent: str              # Set by the Orchestrator (LEAVE, SCHEDULE, etc.)
+    confidence: float        # Set by the Orchestrator (0.0 to 1.0)
+    final_response: str      # Set by whichever sub-agent runs
+    metadata: dict[str, Any] # Set by sub-agents to hold dynamic details (dates, policies, etc.)
+```
+
+### Orchestrator Node Output
+
+```python
+from pydantic import BaseModel, Field
+
+class OrchestratorOutput(BaseModel):
+    intent: str = Field(description="Must be exactly one of: LEAVE, SCHEDULE, COMPLIANCE, or UNKNOWN.")
+    confidence: float = Field(description="Confidence score between 0.0 and 1.0 based on clarity.")
+    reasoning: str = Field(description="Brief 1-sentence explanation of why this intent was chosen.")
+```
+
+*Example Output:*
+```json
+{
+  "intent": "LEAVE",
+  "confidence": 0.95,
+  "reasoning": "User explicitly requested time off for a vacation next month."
+}
+```
+
+### Leave Agent Node Output
+
+```python
+class LeaveAgentOutput(BaseModel):
+    final_response: str = Field(description="Empathetic confirmation of the leave request or balance details.")
+    extracted_dates: list[str] = Field(description="Any specific dates mentioned (e.g., ['2026-06-01'])")
+```
+
+*Example Output (Needs to fetch the user's leave balance from the database and then call Gemini to draft a response like this):*
+```json
+{
+  "final_response": "I've noted your request for vacation from June 1st to June 5th and sent it to your manager.",
+  "extracted_dates": ["2026-06-01", "2026-06-05"]
+}
+```
+
+### Schedule Agent Node Output
+
+```python
+class ScheduleAgentOutput(BaseModel):
+    final_response: str = Field(description="Text confirming the time, date, and status of the calendar event.")
+    meeting_details: dict = Field(description="Keys: 'date', 'time', 'duration', 'attendees'. Use 'Unknown' if missing.")
+```
+
+*Example Output:*
+```json
+{
+  "final_response": "I've scheduled your 1:1 sync with Sarah for tomorrow at 3 PM.",
+  "meeting_details": {
+    "date": "2026-05-24",
+    "time": "15:00",
+    "duration": "30m",
+    "attendees": ["User", "Sarah"]
+  }
+}
+```
+
+### Compliance Agent Node Output
+
+```python
+class ComplianceAgentOutput(BaseModel):
+    final_response: str = Field(description="Clear, accurate answer explaining the requested policy.")
+    policy_reference: str = Field(description="Specific document and section (e.g., 'Handbook Sec 4.2')")
+```
+
+*Example Output:*
+```json
+{
+  "final_response": "Paternity leave allows for up to 6 weeks of fully paid time off within the first year of birth.",
+  "policy_reference": "Parental Benefits Policy 2026, Section 2.1"
+}
+```
+
+### Clarification Agent Node Output
+
+```python
+class ClarificationAgentOutput(BaseModel):
+    final_response: str = Field(description="Polite request for clarity, reminding them of what this HR bot can do.")
+    suggested_options: list[str] = Field(description="Provide 2-3 clickable suggestions matching your main categories.")
+```
+
+*Example Output:*
+```json
+{
+  "final_response": "I didn't quite catch that. I can help you with taking time off, scheduling meetings, or look up HR handbook policies. What can I do for you today?",
+  "suggested_options": ["Book Time Off", "Check Calendar", "Ask Policy Question"]
+}
+```
+
+---
+
+## 2. Agent Prompts
+
+### Orchestrator Agent (Intent Classification)
+```python
+orchestrator_prompt = f"""
+You are the Orchestrator for an enterprise HR system. Your sole responsibility is to analyze the user's message and classify its primary intent so it can be routed to the correct specialist sub-agent.
+
+Your routing must fall strictly into one of the following categories:
+
+1. LEAVE
+   - Triggers: Requests for time off, PTO, checking vacation balances, reporting sick days, or maternity/paternity leave.
+2. SCHEDULE
+   - Triggers: Booking meetings, checking calendars, shifting work hours, or setting up 1:1 reviews.
+3. POLICY
+   - Triggers: Questions about the employee handbook, dress codes, HR policies, benefits, or legal workplace regulations.
+4. UNKNOWN
+   - Triggers: Vague statements, friendly greetings with no request, or non-HR topics (e.g., "Fix my computer").
+
+SCORING RULES:
+- If the intent is obvious and contains specific details, assign a high confidence score (0.85 to 1.0).
+- If the request touches on two categories, choose the primary action requested and assign a medium confidence score (0.60 to 0.84).
+- If the request is incomplete or unrelated to HR, select UNKNOWN and assign a low confidence score (0.0 to 0.59).
+
+User Message: "{user_message}"
+"""
+```
+
+### Leave Agent
+```python
+leave_prompt = f"""
+You are the HR Leave & Time-Off Specialist Agent. 
+Your responsibility is to process employee requests regarding vacation, PTO, sick days, and other forms of leave.
+
+CURRENT MEMORY CONTEXT:
+{memory_context}
+
+USER MESSAGE:
+"{user_message}"
+
+INSTRUCTIONS:
+1. Analyze the user's request against the memory context to see if dates or leave balances have already been established.
+2. If the user is requesting specific dates, extract them and confirm. If dates are missing, politely ask for them.
+3. If the user is reporting sick leave, respond with empathy and inform them that their manager will be notified.
+4. Do not invent or hallucinate vacation balances. If a balance check is requested, state that you are retrieving their current accrual from the HR database.
+
+OUTPUT:
+Provide a direct, helpful, and professional HR response to the employee.
+"""
+```
+
+### Scheduling Agent
+```python
+scheduling_prompt = f"""
+You are the HR Scheduling Coordinator Agent.
+Your responsibility is to assist employees with booking meetings, shifting work schedules, and checking calendar availability.
+
+CURRENT MEMORY CONTEXT:
+{memory_context}
+
+USER MESSAGE:
+"{user_message}"
+
+INSTRUCTIONS:
+1. Identify the core scheduling action: Is the user booking a new meeting, canceling an existing one, or changing their working hours?
+2. Extract any mentioned participants, times, and dates. 
+3. Check the memory context for previously mentioned preferences (e.g., "I only work mornings") and apply them.
+4. If essential details (like time or participant names) are missing, ask the user to clarify those specific details.
+
+OUTPUT:
+Provide a clear, concise response confirming the scheduling action or requesting the missing parameters.
+"""
+```
+
+### Policy Agent
+```python
+policy_prompt = f"""
+You are the HR Policy & Compliance Expert Agent.
+Your responsibility is to answer employee questions regarding company policies, the employee handbook, benefits, and workplace regulations.
+
+CURRENT MEMORY CONTEXT:
+{memory_context}
+
+USER MESSAGE:
+"{user_message}"
+
+INSTRUCTIONS:
+1. Identify the specific policy, benefit, or rule the employee is asking about.
+2. Rely strictly on standard corporate compliance knowledge and any relevant details found in the memory context. 
+3. Do not provide binding legal advice. If a situation sounds like a serious grievance, advise the employee to speak directly with an HR Business Partner.
+4. Keep your explanations clear, objective, and easy to understand, avoiding overly dense corporate jargon.
+
+OUTPUT:
+Provide a factual, policy-driven response. If you lack the exact company document, state that you will flag this for a human HR representative to follow up.
+"""
+```
+
+### Unknown Handle Agent
+```python
+unknown_handle_prompt = f"""
+You are the HR Reception & Clarification Agent.
+The orchestrator routed this user to you because their request was either ambiguous, lacked sufficient detail, or fell outside standard HR categories (Leave, Scheduling, Policy).
+
+CURRENT MEMORY CONTEXT:
+{memory_context}
+
+USER MESSAGE:
+"{user_message}"
+
+INSTRUCTIONS:
+1. Do not expose internal system errors, confidence scores, or routing mechanics to the user.
+2. Acknowledge their message politely.
+3. If the request is completely unrelated to HR (e.g., IT support, casual chit-chat), gently remind the user that this portal is for HR requests (Leave, Scheduling, and Policies) and direct them to the appropriate department if obvious.
+4. If the request seems HR-related but is too vague, ask a clarifying question to help them narrow down what they need (e.g., "Are you looking to schedule a meeting, or do you have a question about our time-off policy?").
+
+OUTPUT:
+Provide a brief, polite response that guides the user back on track or requests the specific details needed to assist them properly.
+"""
+```

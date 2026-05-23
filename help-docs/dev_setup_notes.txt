@@ -1,0 +1,22 @@
+# Commands to set up the environment for the HR Orchestrator Engine project
+source .venv/bin/activate
+
+# Install the required dependencies
+pip install -r requirements.txt
+
+# Run the FastAPI application
+uvicorn main:app --reload
+
+# Alternatively, if the main application is located in a different directory, use:
+uvicorn app.main:app --reload
+
+# Example code to load environment variables from a .env file
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+api_key = os.getenv("API_KEY")
+print(f"API Key: {api_key}")
+
+
+
