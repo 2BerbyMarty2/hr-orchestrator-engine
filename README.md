@@ -1,74 +1,128 @@
-<img width="1215" height="754" alt="Screenshot 2026-05-23 at 21 06 39" src="https://github.com/user-attachments/assets/540a953c-cd73-474b-8475-c964b35ed6a2" />
-<img width="1218" height="753" alt="Screenshot 2026-05-23 at 21 06 29" src="https://github.com/user-attachments/assets/bb52a040-8d5b-4d5c-b223-ff7346101fce" />
 # HR Automation Platform: Multi-Agent Task Routing Engine
 
 ## Project Overview
-You will be developing a multi-agent task routing and memory engine for an HR automation platform, using a central Orchestrator Agent to route natural language requests to specialist sub-agents.
+This project is an enterprise-grade multi-agent task routing and memory engine designed for an HR automation platform. It utilizes a central **Orchestrator Agent** to process natural language requests from employees, classify their intents, and dynamically route them to domain-expert sub-agents. 
 
-## Technical Requirements
+The system integrates real-time database queries, a two-tier conversational memory system, and an immutable audit log to ensure compliance, accuracy, and a seamless employee experience.
 
-### 1. Backend Stack
-* Python 3.11+
-* FastAPI framework implementation
-* Langgraph
-* SQLite database integration
-* LLM APIs/Open-Source Models
-* Environment configuration using a .env file
+## Technical Stack
+* **Language:** Python 3.11+
+* **Framework:** FastAPI (RESTful API architecture)
+* **Orchestration:** LangGraph (State management and agent routing)
+* **AI/LLM:** Google Gemini API (`gemini-3.5-flash`) via LangChain
+* **Database:** Embedded SQLite (Corporate records, memory, and audit logs)
+* **Frontend:** HTML/JS/CSS (Interactive technical sandbox UI)
 
-### 2. Core Functionality
-**REST API endpoints for:**
-* Request handling
-* Audit retrieval
-* Memory management
-* Health monitoring
+## Core System Features
 
-**Automated orchestration system for:**
-* Intent classification with confidence scores
-* Routing classified intents to appropriate sub-agents (Scheduling, Leave, Compliance, and Clarification)
-* Memory retrieval to inject historical context into agent prompts
-* Comprehensive audit logging system
+### 1. Intelligent Orchestration & Routing
+* **Intent Classification:** Evaluates user messages to determine intent (LEAVE, SCHEDULE, POLICY, UNKNOWN) with calculated confidence scores.
+* **Specialist Sub-Agents:** * **Leave Agent:** Manages vacation/PTO balances and requests.
+  * **Schedule Agent:** Coordinates calendar events and shifts.
+  * **Policy Agent:** Acts as an interactive employee handbook.
+  * **Clarification Agent:** Handles fallback routing with polite clarification requests.
 
-### 3. System Modules in Intent Classification Engine
-* Agent Router & Sub-Agent Stubs
-* Two-tier Memory System (STM and LTM)
-* Append-only Audit Log
+### 2. Contextual Memory System
+* **Two-Tier Architecture:** Features Short-Term Memory (STM) for active session context and Long-Term Memory (LTM) for persistent user preferences.
+* **Context Injection:** Agents automatically retrieve and inject historical memory into their prompts to avoid repetitive user inputs.
 
-## Evaluation Criteria
+### 3. Compliance & Audit Logging
+* **Append-Only Ledger:** An immutable `audit_logs` database table enforces strict compliance.
+* **Comprehensive Tracking:** Automatically records timestamps, employee IDs, raw queries, classified intents, confidence scores, and final drafted responses.
 
-**Working System:**
-* Server starts and pipeline executes end-to-end
-* All 5 endpoints respond correctly
+---
 
-**Code Quality:**
-* Modular design and separation of concerns
-* Type annotations and docstrings
+## Implementation & Project Structure
 
-**Agent Architecture:**
-* Clean agent boundaries
-* Context injection, retry, and timeout logic
+```text
+hr-orchestrator-engine/
+│
+├── app/                        # Main Application Package
+│   ├── agents.py               # Specialist execution nodes & Gemini LLM integration
+│   ├── graph.py                # LangGraph workflow, edges, and routing logic
+│   ├── main.py                 # FastAPI application initialization & lifespan management
+│   ├── request.py              # Pydantic schemas for API payload validation
+│   ├── router.py               # REST API endpoints and database transaction logic
+│   ├── state.py                # Shared HRState dictionary and Orchestrator node
+│   └── database/               # Database Layer
+│       ├── database.py         # SQLite client, schemas, and query methods
+│       └── hr_database.db      # Embedded SQLite database instance
+│
+├── frontend_ui/                # Client Interface
+│   └── index.html              # Interactive chat sandbox and developer dashboard
+│
+├── help-docs/                  # Documentation & Notes
+│   ├── dev_setup_notes.txt     
+│   ├── report.txt              
+│   └── sql_code.txt            
+│
+├── .env                        # Environment variables (API Keys)
+├── .gitignore
+├── requirements.txt            # Project dependencies
+└── README.md
 
-**Memory System:**
-* STM and LTM functionality
-* Sound and justified significance scoring logic
+```
 
-**Audit Log:**
-* Append-only enforcement and presence of required fields
-
-**Bug Finding & Fixes:**
-* Identification and correction of starter-code bugs
-
-**Report:**
-* Explanation and honesty about trade-offs
-
-*Note: The system includes appropriate fallback handling for uncertain requests and handles failures politely without exposing raw Python stack traces. Mock data is used for testing.*
+<div align="center">
+  <img width="1215" height="754" alt="Screenshot 2026-05-23 at 21 06 39" src="https://github.com/user-attachments/assets/540a953c-cd73-474b-8475-c964b35ed6a2" />
+  <br>
+  <img width="1218" height="753" alt="Screenshot 2026-05-23 at 21 06 29" src="https://github.com/user-attachments/assets/bb52a040-8d5b-4d5c-b223-ff7346101fce" />
+</div>
 
 
-# Implimentation
+## Setup & Execution
 
-## Project Structure
+**1. Clone the repository and navigate to the root directory:**
 
-app/
-endpoint.py
-main.py
-request.py
-route.py
+```bash
+cd hr-orchestrator-engine
+
+```
+
+**2. Create and activate a Python virtual environment:**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+
+```
+
+**3. Install required dependencies:**
+
+```bash
+pip install -r requirements.txt
+
+```
+
+**4. Configure Environment Variables:**
+Create a `.env` file in the root directory and add your LLM API Key:
+
+```env
+GEMINI_API_KEY=your_google_gemini_api_key_here
+
+```
+
+**5. Run the FastAPI Application:**
+
+```bash
+uvicorn app.main:app --reload
+
+```
+
+**6. Access the System:**
+
+* **Frontend UI Sandbox:** Open `http://127.0.0.1:8000/` in your browser.
+* **API Documentation (Swagger):** Navigate to `http://127.0.0.1:8000/docs`.
+* **Health Check:** Navigate to `http://127.0.0.1:8000/health`.
+
+## REST API Endpoints Overview
+
+* `POST /api/v1/request`: Primary gateway for natural language HR queries.
+* `GET /api/v1/memory/{employee_id}`: Retrieves active session memory context.
+* `POST /api/v1/memory`: Manual injection gateway for STM/LTM context.
+* `GET /api/v1/audit`: Retrieves complete transaction logs for compliance.
+* `GET /api/v1/employees`: Directory listing for the active database.
+
+```
+
+```
