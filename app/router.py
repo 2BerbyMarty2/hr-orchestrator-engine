@@ -220,3 +220,64 @@ async def get_all_employees():
         ]
     except Exception:
         raise HTTPException(status_code=500, detail="router.py RO-006 error: Failed to retrieve employees.")
+
+
+@main_router.get("/api/v1/employees/{employee_id}/profile", tags=["Monitoring"])
+async def get_employee_profile(employee_id: str):
+    """
+    Profile retrieval endpoint returning detailed employee metrics.
+    Fetches personal details, leave balances, and scheduled shifts.
+
+    Args:
+        employee_id (str): Target Employee ID path parameter.
+
+    Returns:
+        dict: Employee details, leave balances, and scheduled shifts.
+    """
+    try:
+        with sqlite3.connect(db.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT e.*, d.department_name
+                FROM employees e
+                JOIN departments d ON e.department_id = d.department_id
+                WHERE e.employee_id = ?
+                """,
+                (employee_id,),
+            )
+            emp = cursor.fetchone()
+        
+        if not emp:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        emp_dict = dict(emp)
+        
+        # Fetch leave balances using DatabaseClient helper
+        vac_left, vac_alloc, sick_left, sick_alloc = db.fetch_leave_data(employee_id)
+        
+        # Fetch upcoming shifts using DatabaseClient helper
+        shifts = db.fetch_schedule_data(employee_id)
+        
+        return {
+            "employee_id": emp_dict["employee_id"],
+            "name": f"{emp_dict['first_name']} {emp_dict['last_name']}",
+            "email": emp_dict["email"],
+            "department": emp_dict["department_name"],
+            "leave": {
+                "vacation_left": vac_left,
+                "vacation_allocated": vac_alloc,
+                "sick_left": sick_left,
+                "sick_allocated": sick_alloc,
+            },
+            "shifts": [
+                {"date": s[0], "start_time": s[1], "end_time": s[2]}
+                for s in shifts
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"router.py RO-007 error: Failed to retrieve employee profile ({type(e).__name__}).",
+        )

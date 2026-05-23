@@ -94,13 +94,14 @@ def schedule_agent_node(state: HRState) -> dict:
     user_message = state.get("user_message", "")
     memory_context = state.get("memory_context", "No prior context.")
 
-    # Retrieve upcoming shifts ordered by date ascending
+    # Retrieve upcoming shifts ordered by date ascending and format as a Markdown table
     schedule_rows = db.fetch_schedule_data(employee_id)
-    db_context = (
-        "\n".join([f"- {row[0]}: {row[1]} to {row[2]}" for row in schedule_rows])
-        if schedule_rows
-        else "No upcoming shifts scheduled."
-    )
+    if schedule_rows:
+        db_context = "| Date | Start Time | End Time |\n| :--- | :--- | :--- |\n" + "\n".join(
+            [f"| {row[0]} | {row[1]} | {row[2]} |" for row in schedule_rows]
+        )
+    else:
+        db_context = "No upcoming shifts scheduled."
 
     # Specialist prompt incorporating schedule rows
     prompt = f"""You are the HR Scheduling Coordinator Agent.
@@ -120,6 +121,7 @@ INSTRUCTIONS:
 2. Extract any mentioned participants, times, and dates.
 3. Check the memory context for previously mentioned preferences (e.g., "I only work mornings") and apply them.
 4. If essential details (like time or participant names) are missing, ask the user to clarify those specific details.
+5. When presenting or listing scheduled shifts to the employee, always format them as a clean Markdown data table with columns for Date, Start Time, and End Time.
 
 OUTPUT:
 Provide a clear, concise response confirming the scheduling action or requesting the missing parameters."""

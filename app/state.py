@@ -82,6 +82,12 @@ def orchestrator_node(state: HRState) -> HRState:
         - If the request touches on two categories (e.g., "Schedule a meeting about my leave"), choose the primary action requested and assign a medium confidence score (0.6 to 0.8).
         - If the request is incomplete or unrelated to HR, select UNKNOWN and assign a low confidence score (0.0 to 0.4).
 
+        COLLISION / OVERLAP RESOLUTION RULES:
+        - When a request involves both time-off (LEAVE) and calendar management (SCHEDULE) (e.g., "Schedule vacation next week", "Reschedule shifts because I am sick", "Adjust shift dates for PTO"):
+          * Classify as LEAVE if the primary action requested is to check a PTO balance, request absence, or reduce total active workdays.
+          * Classify as SCHEDULE if the primary action is to swap shift timings, book business meetings, or modify hours within active work calendars without taking time off.
+          * For these hybrid requests, adjust the confidence score to a medium threshold (0.60 to 0.84) to indicate multi-tier categorization overlap.
+
         User Message: "{user_message}"
         """
     
