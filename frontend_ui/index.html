@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Orchestration Engine: Technical Sandbox & Testing Registry</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Times New Roman", Times, serif;
+        }
+
+        body {
+            background-color: #fafaf9;
+            color: #1c1917;
+            padding: 40px;
+            line-height: 1.5;
+        }
+
+        .academic-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #000000;
+            padding: 40px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        /* ── Title Block ── */
+        .title-block {
+            text-align: center;
+            border-bottom: 4px double #000000;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .title-block h1 {
+            font-size: 2.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .title-block p {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: #44403c;
+        }
+
+        /* ── Standard Components ── */
+        button, input, select {
+            font-family: "Times New Roman", Times, serif;
+            font-size: 1rem;
+            color: #1c1917;
+            background: #ffffff;
+            border: 1px solid #000000;
+            padding: 6px 12px;
+            outline: none;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            background: #000000;
+            color: #ffffff;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        button:hover {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        input {
+            width: 100%;
+        }
+
+        /* ── Tables ── */
+        table.academic-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.95rem;
+        }
+
+        table.academic-table th, table.academic-table td {
+            border: 1px solid #000000;
+            padding: 8px 12px;
+            text-align: left;
+        }
+
+        table.academic-table th {
+            background-color: #f5f5f4;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        table.academic-table tbody tr.clickable {
+            cursor: pointer;
+        }
+
+        table.academic-table tbody tr.clickable:hover {
+            background-color: #f5f5f4;
+        }
+
+        /* ── Login screen ── */
+        .login-section {
+            max-width: 600px;
+            margin: 40px auto;
+            border: 1px solid #000000;
+            padding: 30px;
+            background: #ffffff;
+        }
+
+        .login-section h2 {
+            font-size: 1.3rem;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 6px;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .error-message {
+            border: 1px solid #000000;
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        /* ── Workspace Grid ── */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 40px;
+        }
+
+        .chat-column, .dev-column {
+            border: 1px solid #000000;
+            padding: 20px;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-header {
+            border-bottom: 1px solid #000000;
+            padding-bottom: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .chat-box {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #000000;
+            padding: 15px;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message-row {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+        }
+
+        .message-row.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .message-row.bot {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .message {
+            padding: 12px;
+            border: 1px solid #000000;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            background: #ffffff;
+        }
+
+        .user .message {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .user .message strong {
+            color: #ffffff;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            font-style: italic;
+            margin-top: 4px;
+            color: #44403c;
+        }
+
+        .input-bar {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* ── Developer Presets ── */
+        .tab-bar {
+            display: flex;
+            border-bottom: 1px solid #000000;
+        }
+
+        .tab-btn {
+            background: #ffffff;
+            color: #1c1917;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-btn.active {
+            font-weight: bold;
+            border-bottom: 2px solid #000000;
+        }
+
+        .tab-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .test-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .test-item {
+            text-align: left;
+            padding: 10px;
+            border: 1px solid #000000;
+            background: #ffffff;
+            color: #1c1917;
+            font-size: 0.9rem;
+        }
+
+        .test-item:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .json-panel {
+            border: 1px solid #000000;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 0.75rem;
+            white-space: pre-wrap;
+            background: #fafaf9;
+            color: #000000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .state-widget {
+            border: 1px solid #000000;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+
+        .state-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .data-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .data-item {
+            border: 1px solid #000000;
+            padding: 10px;
+            font-size: 0.85rem;
+        }
+
+        .data-item-header {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            border-bottom: 1px dashed #000000;
+            padding-bottom: 4px;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="academic-container">
+        <!-- Title & Document Header -->
+        <div class="title-block">
+            <h1>HR Orchestration Engine</h1>
+            <p>A Multi-Agent Routing, Intent Classification and Persistent Memory Technical Registry</p>
+        </div>
+
+        <!-- 1. LOGIN SCREEN -->
+        <div class="login-section" id="login-screen">
+            <h2>Authorized Session Initialization</h2>
+            <div class="form-group">
+                <label for="emp-id-input">Session Employee Identifier</label>
+                <input type="text" id="emp-id-input" placeholder="e.g. EMP-101" onkeypress="handleLoginKey(event)">
+            </div>
+            
+            <button onclick="startChat()" style="width: 100%;">INITIALIZE ACTIVE SESSION</button>
+            <div class="error-message" id="login-error"></div>
+
+            <h2 style="margin-top: 30px;">Active Directory: Authorized Registrants</h2>
+            <p style="font-size: 0.85rem; font-style: italic; margin-bottom: 10px; color: #44403c;">
+                The table below represents the active database records. Select a row to populate credentials or enter manually. Only registrants present in the database are allowed access:
+            </p>
+            <table class="academic-table" id="employees-table">
+                <thead>
+                    <tr>
+                        <th>Employee ID</th>
+                        <th>Name</th>
+                        <th>Department</th>
+                    </tr>
+                </thead>
+                <tbody id="employees-list-body">
+                    <tr>
+                        <td colspan="3" style="text-align: center; font-style: italic;">Retrieving directory from database...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 2. WORKSPACE -->
+        <div class="workspace" id="workspace" style="display: none;">
+            <!-- Left Column: Chat Agent -->
+            <div class="chat-column">
+                <div class="header">
+                    <div>
+                        <h2 class="section-header" style="border-bottom: none; padding-bottom: 0;">Agent Session Interface</h2>
+                        <div style="font-size: 0.85rem; font-style: italic;">
+                            Authorized Subject: <span id="emp-badge" style="font-weight: bold;">EMP-101</span>
+                        </div>
+                    </div>
+                    <button onclick="logout()">DISCONNECT SESSION</button>
+                </div>
+
+                <div class="chat-box" id="chat-box">
+                    <div class="message-row bot">
+                        <div class="message">
+                            SYSTEM INITIALIZED. CHOOSE OR WRITE A PROMPT TO INITIATE INTENT CLASSIFICATION AND ROUTING:<br>
+                            - LEAVE BALANCE & VACATION REQUESTS<br>
+                            - CALENDAR SCHEDULING<br>
+                            - COMPANY HANDBOOK COMPLIANCE POLICIES
+                        </div>
+                        <div class="message-info">SYSTEM STATUS: ESTABLISHED</div>
+                    </div>
+                </div>
+
+                <div class="input-bar">
+                    <input type="text" id="user-input" placeholder="Submit natural language request..." onkeypress="handleChatKey(event)">
+                    <button onclick="sendMessage()">SUBMIT</button>
+                </div>
+            </div>
+
+            <!-- Right Column: Developer Console -->
+            <div class="dev-column">
+                <div class="tab-bar">
+                    <button class="tab-btn active" id="tab-test" onclick="switchTab('test')">Sandbox Presets</button>
+                    <button class="tab-btn" id="tab-db" onclick="switchTab('db')">State Ledger</button>
+                </div>
+
+                <div class="tab-content" id="tab-content-test">
+                    <div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 10px;">SANDBOX SCENARIO INJECTION</h3>
+                        <div class="test-list">
+                            <button class="test-item" onclick="injectTest('I need to take leave')">
+                                <strong>LEAVE SCENARIO:</strong> "I need to take leave"
+                            </button>
+                            <button class="test-item" onclick="injectTest('Am I working next Monday morning?')">
+                                <strong>SCHEDULING SCENARIO:</strong> "Am I working next Monday morning?"
+                            </button>
+                            <button class="test-item" onclick="injectTest('What is our policy on parental leave?')">
+                                <strong>COMPLIANCE SCENARIO:</strong> "What is our policy on parental leave?"
+                            </button>
+                            <button class="test-item" onclick="injectTest('Can you help me fix my computer?')">
+                                <strong>FALLBACK SCENARIO:</strong> "Can you help me fix my computer?"
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 10px;">LAST TRANSACTION JSON RECORD</h3>
+                        <div class="json-panel" id="json-logger">No transaction initiated in this session yet.</div>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-content-db" style="display: none;">
+                    <div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 10px;">CLASSIFIED STATE</h3>
+                        <div class="state-widget">
+                            <div class="state-row">
+                                <span>CLASSIFIED INTENT:</span>
+                                <span id="widget-intent" style="font-weight: bold;">NONE</span>
+                            </div>
+                            <div class="state-row">
+                                <span>ROUTING CONFIDENCE:</span>
+                                <span id="widget-confidence" style="font-weight: bold;">0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 10px;">DATABASE AUDIT LOG TABLE</h3>
+                        <div class="data-list" id="audit-logger">
+                            <div style="font-style: italic; font-size: 0.9rem;">No audit logs retrieved.</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 style="font-size: 1.05rem; margin-bottom: 10px;">PERSISTENT MEMORY TIERS</h3>
+                        <div class="data-list" id="memory-logger">
+                            <div style="font-style: italic; font-size: 0.9rem;">No memory records retrieved.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let EMPLOYEE_ID = "";
+        let ACTIVE_TAB = "test";
+        let EMPLOYEES_DB = [];
+        marked.setOptions({ breaks: true, pedantic: false });
+
+        // Load employees on startup
+        document.addEventListener("DOMContentLoaded", loadEmployeesDirectory);
+
+        async function loadEmployeesDirectory() {
+            try {
+                const res = await fetch("/api/v1/employees");
+                if (res.ok) {
+                    EMPLOYEES_DB = await res.json();
+                    renderEmployeesTable();
+                } else {
+                    showTableError("Failed to fetch directory from server.");
+                }
+            } catch (err) {
+                showTableError("Failed to establish server connection.");
+            }
+        }
+
+        function renderEmployeesTable() {
+            const body = document.getElementById("employees-list-body");
+            if (EMPLOYEES_DB.length === 0) {
+                body.innerHTML = '<tr><td colspan="3" style="text-align: center; font-style: italic;">No records found.</td></tr>';
+                return;
+            }
+            body.innerHTML = EMPLOYEES_DB.map(emp => `
+                <tr class="clickable" onclick="selectEmployee('${emp.employee_id}')">
+                    <td><strong>${emp.employee_id}</strong></td>
+                    <td>${emp.name}</td>
+                    <td>${emp.department}</td>
+                </tr>
+            `).join('');
+        }
+
+        function showTableError(msg) {
+            const body = document.getElementById("employees-list-body");
+            body.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #991b1b; font-weight: bold;">[ERROR] ${msg}</td></tr>`;
+        }
+
+        function selectEmployee(id) {
+            document.getElementById("emp-id-input").value = id;
+            document.getElementById("login-error").style.display = "none";
+        }
+
+        function startChat() {
+            const input = document.getElementById("emp-id-input");
+            const val = input.value.trim();
+            const errEl = document.getElementById("login-error");
+            
+            if (!val) { 
+                errEl.textContent = "[ERROR] ACCESS DENIED: Employee identifier is required.";
+                errEl.style.display = "block"; 
+                return; 
+            }
+
+            // Check if employee ID exists in fetched database list
+            const matched = EMPLOYEES_DB.some(emp => emp.employee_id.toLowerCase() === val.toLowerCase());
+            if (!matched) {
+                errEl.textContent = `[ERROR] ACCESS DENIED: Employee ID "${val}" was not found in the active database registry.`;
+                errEl.style.display = "block";
+                return;
+            }
+
+            errEl.style.display = "none";
+            EMPLOYEE_ID = val;
+            
+            document.getElementById("emp-badge").textContent = EMPLOYEE_ID;
+            document.getElementById("login-screen").style.display = "none";
+            document.getElementById("workspace").style.display = "grid";
+            document.getElementById("user-input").focus();
+            
+            refreshDevDB();
+        }
+
+        function logout() {
+            EMPLOYEE_ID = "";
+            document.getElementById("emp-id-input").value = "";
+            document.getElementById("login-error").style.display = "none";
+            document.getElementById("chat-box").innerHTML = `
+                <div class="message-row bot">
+                    <div class="message">
+                        SYSTEM INITIALIZED. CHOOSE OR WRITE A PROMPT TO INITIATE INTENT CLASSIFICATION AND ROUTING:<br>
+                        - LEAVE BALANCE & VACATION REQUESTS<br>
+                        - CALENDAR SCHEDULING<br>
+                        - COMPANY HANDBOOK COMPLIANCE POLICIES
+                    </div>
+                    <div class="message-info">SYSTEM STATUS: ESTABLISHED</div>
+                </div>`;
+            document.getElementById("workspace").style.display = "none";
+            document.getElementById("login-screen").style.display = "block";
+            document.getElementById("emp-id-input").focus();
+            
+            document.getElementById("json-logger").textContent = "No transaction initiated in this session yet.";
+            document.getElementById("widget-intent").textContent = "NONE";
+            document.getElementById("widget-confidence").textContent = "0.00";
+            loadEmployeesDirectory();
+        }
+
+        async function sendMessage(overrideText = "") {
+            const input = document.getElementById("user-input");
+            const text = overrideText ? overrideText : input.value.trim();
+            if (!text) return;
+
+            addMessage(text, "user");
+            if (!overrideText) input.value = "";
+            input.disabled = true;
+
+            const typing = addTyping();
+            
+            const payload = { 
+                employee_id: EMPLOYEE_ID, 
+                message: text
+            };
+
+            logJSON("POST REQUEST PAYLOAD:\n" + JSON.stringify(payload, null, 2));
+
+            try {
+                const res = await fetch("/api/v1/request", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                typing.remove();
+
+                logJSON("RESPONSE PAYLOAD (STATUS " + res.status + "):\n" + JSON.stringify(data, null, 2));
+
+                if (data.final_response) {
+                    addMessage(data.final_response, "bot");
+                    
+                    document.getElementById("widget-intent").textContent = data.intent || "UNKNOWN";
+                    document.getElementById("widget-confidence").textContent = Number(data.confidence || 0).toFixed(2);
+                } else if (data.detail) {
+                    const err = Array.isArray(data.detail)
+                        ? data.detail.map(e => e.msg).join(", ")
+                        : String(data.detail);
+                    addMessage(err, "err");
+                } else {
+                    addMessage("Error processing payload response.", "err");
+                }
+            } catch (err) {
+                typing.remove();
+                addMessage("Connection lost or server timeout.", "err");
+            } finally {
+                input.disabled = false;
+                input.focus();
+                refreshDevDB();
+            }
+        }
+
+        function injectTest(promptText) {
+            sendMessage(promptText);
+        }
+
+        function addMessage(text, sender) {
+            const box = document.getElementById("chat-box");
+            const row = document.createElement("div");
+            row.className = `message-row ${sender}`;
+            
+            const msgEl = document.createElement("div");
+            msgEl.className = "message";
+            msgEl.innerHTML = sender === "bot"
+                ? marked.parse(text)
+                : text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+            
+            const infoEl = document.createElement("div");
+            infoEl.className = "message-info";
+            infoEl.textContent = sender === "user" ? "SUBJECT INPUT" : "ROUTED AGENT RESPONSE";
+            
+            row.appendChild(msgEl);
+            row.appendChild(infoEl);
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function addTyping() {
+            const box = document.getElementById("chat-box");
+            const row = document.createElement("div");
+            row.className = "message-row bot";
+            
+            const msgEl = document.createElement("div");
+            msgEl.className = "message";
+            msgEl.innerHTML = "PROCESSING INJECTED PAYLOAD...";
+            
+            row.appendChild(msgEl);
+            box.appendChild(row);
+            box.scrollTop = box.scrollHeight;
+            return row;
+        }
+
+        function logJSON(logText) {
+            document.getElementById("json-logger").textContent = logText;
+        }
+
+        function switchTab(tabName) {
+            ACTIVE_TAB = tabName;
+            document.getElementById("tab-test").classList.toggle("active", tabName === "test");
+            document.getElementById("tab-db").classList.toggle("active", tabName === "db");
+            
+            document.getElementById("tab-content-test").style.display = tabName === "test" ? "block" : "none";
+            document.getElementById("tab-content-db").style.display = tabName === "db" ? "block" : "none";
+        }
+
+        async function refreshDevDB() {
+            if (!EMPLOYEE_ID) return;
+
+            // Audit Logs
+            try {
+                const auditRes = await fetch(`/api/v1/audit?employee_id=${EMPLOYEE_ID}`);
+                if (auditRes.ok) {
+                    const audits = await auditRes.json();
+                    const auditContainer = document.getElementById("audit-logger");
+                    if (audits.length === 0) {
+                        auditContainer.innerHTML = '<div style="font-style: italic;">No audit log records found.</div>';
+                    } else {
+                        auditContainer.innerHTML = audits.map(log => `
+                            <div class="data-item">
+                                <div class="data-item-header">
+                                    <span>INTENT: ${log.classified_intent} (CONF: ${Number(log.confidence_score).toFixed(2)})</span>
+                                    <span>${log.timestamp}</span>
+                                </div>
+                                <div style="font-weight: bold; margin-bottom: 4px;">QUERY: "${log.user_message}"</div>
+                                <div>RESPONSE: ${log.final_response}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+
+            // Memory Store
+            try {
+                const memRes = await fetch(`/api/v1/memory/${EMPLOYEE_ID}`);
+                if (memRes.ok) {
+                    const memories = await memRes.json();
+                    const memContainer = document.getElementById("memory-logger");
+                    if (memories.length === 0) {
+                        memContainer.innerHTML = '<div style="font-style: italic;">No active session memory found.</div>';
+                    } else {
+                        memContainer.innerHTML = memories.map(mem => `
+                            <div class="data-item">
+                                <div class="data-item-header">
+                                    <span>TIER: ${mem.memory_tier}</span>
+                                    <span>SIGNIFICANCE: ${Number(mem.significance_score).toFixed(1)}</span>
+                                </div>
+                                <div>${mem.content}</div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function handleLoginKey(e) { if (e.key === "Enter") startChat(); }
+        function handleChatKey(e)  { if (e.key === "Enter") sendMessage(); }
+    </script>
+</body>
+</html>

@@ -22,7 +22,8 @@ dist/
 *.swo
 
 # OS-specific files
-.DS_Store # macOS
+# macOS
+.DS_Store
 
 # Test/cache directories
 .pytest_cache/
@@ -32,6 +33,9 @@ dist/
 *.log
 *.sqlite3
 *.db
+*.db-shm
+*.db-wal
+*.sqlite3-journal
 
 # Environment variables
 .env
